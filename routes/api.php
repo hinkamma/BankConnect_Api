@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\HistoryTransactionController;
 use App\Http\Controllers\ManagerAccountController;
 use App\Http\Controllers\OperationBankController;
 use Illuminate\Http\Request;
@@ -46,7 +47,7 @@ Route::middleware('auth:sanctum')->group(function(){
     //cette route permet a un utilisateur de deposer de la'agent dans un autre compte
     Route::post("/deposite",[OperationBankController::class,'depositeInMyAccount']);
 
-    //cette route permet a un clien de retirer del'agent dans son propre compte
+    //cette route permet a un clienT de retirer del'agent dans son propre compte
     Route::post("/Withdrawal",[OperationBankController::class, 'MoneyWithdrawal']);
 
     //cette route permet a un client d'effectuer un virement depuis son compte
@@ -54,5 +55,10 @@ Route::middleware('auth:sanctum')->group(function(){
 
     //cette route permet a un client de verifier son compte
     Route::get('/verify_amount',[OperationBankController::class,'verifyAmount']);
+
+    //cette route permet a un client de voir l'historique de ses operations
+    Route::get('/history_operations',[HistoryTransactionController::class,'historyOperations']);
+    
 });
 
+// 
