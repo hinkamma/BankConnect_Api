@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Api;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ModeyWithdrawalRequest extends FormRequest
+class DepositeRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,9 +22,16 @@ class ModeyWithdrawalRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+       return [
             "montant"=>"required|numeric|min:100",
             "description"=>"nullable|string|max:255"
+        ];
+    }
+
+    public function messages():array
+    {
+        return [
+            "montant.required"=> "Le montant est obligatoire."
         ];
     }
 }

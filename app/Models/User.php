@@ -21,11 +21,13 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'first_name',
+        'last_name',
         'email',
-        'phone',
         'password',
+        'phone',
+        'status',
         'role',
-        'status'
     ];
 
     /**
@@ -44,5 +46,10 @@ class User extends Authenticatable
 
     public function Transactions(){
         return $this->hasMany(Transaction::class);
+    }
+
+    public function loginHistories()
+    {
+        return $this->hasMany(LoginHistory::class);
     }
 }

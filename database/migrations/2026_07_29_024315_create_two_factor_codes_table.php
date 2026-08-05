@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('accounts', function (Blueprint $table) {
-            $table->string('account_number',20)->unique()->change();
+        Schema::create('two_factor_codes', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete("cascade");
+            $table->string('code');
+            $table->timestamp('expires_at');
+            $table->timestamps();
         });
     }
 
@@ -21,8 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('accounts', function (Blueprint $table) {
-            $table->string('account_number',10)->unique()->change();
-        });
+        Schema::dropIfExists('two_factor_codes');
     }
 };

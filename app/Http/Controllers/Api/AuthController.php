@@ -13,52 +13,52 @@ use Laravel\Sanctum\HasApiTokens;
 class AuthController extends Controller
 {
     // fonction qui permet d'inscrire un utilisateur
-    function register(RegisterRequest $request){
-        $user=User::create([
-            'name'=>$request->name,
-            'email'=>$request->email,
-            'phone'=>$request->phone,
-            'password'=>Hash::make($request->password),
-            'role'=>'client',
-            'status'=>'actif'
-        ]);
+    // function register(RegisterRequest $request){
+    //     $user=User::create([
+    //         'name'=>$request->name,
+    //         'email'=>$request->email,
+    //         'phone'=>$request->phone,
+    //         'password'=>Hash::make($request->password),
+    //         'role'=>'client',
+    //         'status'=>'actif'
+    //     ]);
         
-        // generont lui alors un token qu'il utilisera
-        $token=$user->createToken('auth_token')->plainTextToken;
+    //     // generont lui alors un token qu'il utilisera
+    //     $token=$user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            $user=$user,
-            $token=$token
-        ],201);
-    }
+    //     return response()->json([
+    //         $user=$user,
+    //         $token=$token
+    //     ],201);
+    // }
 
     //fonction qui permet de connecter un utilisateur
-    function login(Request $request){
-        $user=$request->validate([
-            'email'=>'email|string|required',
-            'password'=>'string|required'
-        ]);
+    // function login(Request $request){
+    //     $user=$request->validate([
+    //         'email'=>'email|string|required',
+    //         'password'=>'string|required'
+    //     ]);
 
-        $dataUser=User::where('email',$user['email'])->first();
+    //     $dataUser=User::where('email',$user['email'])->first();
         
-        if(!$dataUser || !(Hash::check($request["password"],$dataUser['password']))){
-            return response()->json([
-                'back_flash'=>'identifiants incorrects'
-            ],401);
-        }
+    //     if(!$dataUser || !(Hash::check($request["password"],$dataUser['password']))){
+    //         return response()->json([
+    //             'back_flash'=>'identifiants incorrects'
+    //         ],401);
+    //     }
 
-        $token=$dataUser->createToken('auth_token')->plainTextToken;
-        return response()->json([
-            'user'=>$user,
-            'token'=>$token
-        ]);
-    }
+    //     $token=$dataUser->createToken('auth_token')->plainTextToken;
+    //     return response()->json([
+    //         'user'=>$user,
+    //         'token'=>$token
+    //     ]);
+    // }
 
     //fonction qui permet de deconnecter un utilisateur
-    function logout(Request $request){
-        $request->user()->currentAccessToken()->delete();
-        return response()->json([
-            'message'=>'utilisateur deconnecté'
-        ]);
-    }
+    // function logout(Request $request){
+    //     $request->user()->currentAccessToken()->delete();
+    //     return response()->json([
+    //         'message'=>'utilisateur deconnecté'
+    //     ]);
+    // }
 }

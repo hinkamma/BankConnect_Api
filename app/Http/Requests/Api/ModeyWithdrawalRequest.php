@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Api;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class OpenAccountRequest extends FormRequest
+class ModeyWithdrawalRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return $this->user()!=null ;
+        return $this->user() !=null;
     }
 
     /**
@@ -23,14 +23,15 @@ class OpenAccountRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "type"=> "required|in:courant,pro,epagne"
+            "montant"=>"required|numeric|min:100",
+            "description"=>"nullable|string|max:255"
         ];
     }
 
-    public function messages()
+    public function messages():array
     {
         return [
-            "type.in","type.required"=>"le numéro de compte ne peut etre que courant, pro, epargne"
+            "montant.required"=> "Le montant est obligatoire."
         ];
     }
 }

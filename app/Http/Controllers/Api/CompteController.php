@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
-use App\Http\Requests\OpenAccountRequest;
-use App\Models\Account;
-use App\Models\User;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
+use App\Models\Account;
+use App\Http\Requests\Api\OpenAccountRequest;
 use Illuminate\Support\Facades\DB;
 
-class ManagerAccountController extends Controller
+class CompteController extends Controller
 {
-      private function generateAccountNumber(){
+    // cette fonction permet de generer un numero de compte unique
+    private function generateAccountNumber(){
         do{
             $number='BNK'. str_pad(random_int(0,99999999),8,'0',STR_PAD_LEFT);
         }while(Account::where('account_number',$number)->exists());
@@ -38,6 +38,8 @@ class ManagerAccountController extends Controller
         ]);
     }
 
+
+
     //cette fonction permet a un client de voir tous ses comptes
     public function displayAllAccounts(Request $request){
         $query=$accountsUser=$request->user()->Accounts()->orderBy('created_at','desc')->get();
@@ -63,11 +65,12 @@ class ManagerAccountController extends Controller
         return response()->json($account);
     }
 
-    //cete fonction permet de fermer un compte
+
+    // cete fonction permet  la demande de fermeture dun compte par l'utilisateur
     public function closeAccount(Request $request, $id){
         $account=Account:: find($id);
 
-        if($account->user_id !=$request->user()->id || $request->role != "admin"){
+        if($account->user_id !=$request->user()->id ){
             return response()->json([
                 "message"=> "Ce compte est non autorisé"
             ]);
@@ -89,11 +92,12 @@ class ManagerAccountController extends Controller
         ]);    
     }
 
+
     //cette function permet a un admin de bloquer un compte 
-    public function toBlockAccount(Request $request, $id){
+     public function toBlockAccount(Request $request, $id){
         $account=Account::find($id);
 
-        if($account->user_id !=$request->id && $request->role!='admin'){
+        if($request->role!='admin'){
             return response()->json(["message"=>"impossible de bloquer le compte"]);
         }
 
@@ -105,21 +109,21 @@ class ManagerAccountController extends Controller
         return response()->json(["message"=>"compte bloqué"]);
     }
 
-    //cette fonction permet a un admin de deblquer un compte
-    public function unblock(Request $request,$id){
+
+    //cette function permet a un admin de debloquer un compte 
+     public function unblockAccount(Request $request, $id){
         $account=Account::find($id);
 
         if($request->role!='admin'){
-            return response()->json(["message"=>"vous n'avez pas le droit de debloquer ce compte"]);
+            return response()->json(["message"=>"impossible de debloquer le compte"]);
         }
 
-        if($account->status =="actif" || $account->status !="bloquer" ){
-            return response()->json(["message"=>"cette action est impossible"]);
+        if($account->status=="fermer"){
+            return response()->json(["message"=>"impossible de debloquer le compte"]);
         }
         $account->status="actif";
         $account->save();
-        return response()->json(["message"=>"le compte a bien été debloquer"]);
-
+        return response()->json(["message"=>"compte débloqué"]);
     }
 
 }

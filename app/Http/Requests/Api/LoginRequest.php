@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Api;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class RegisterRequest extends FormRequest
+class LoginRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,18 +23,17 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'=>'required|string',
-            'email'=>'email|required|unique:users',
-            'phone'=>'required|string',
-            'password'=>'required|min:6|confirmed'
+            'email'=>'required|string|email',
+            'password'=>'required|string'
         ];
     }
 
-    public function messages()
+    public function messages():array
     {
         return [
-            'name.required','email.required','phone.required','password.required'=> 'le champs Nom est requis '
-
+            'email.required'=> 'L\'adresse email est obligatoire.',
+            'email.email'=>'veuillez fournir une adresse email valide.',
+            'password.required'=>'le mot de passe est obligatoire.'
         ];
     }
 }
