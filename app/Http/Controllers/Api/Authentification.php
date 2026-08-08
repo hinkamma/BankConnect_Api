@@ -11,6 +11,7 @@ use App\Mail\TwoFactorCodemail;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
+use App\Notifications\LoginOtpNotification;
 
 class Authentification extends Controller
 {
@@ -60,7 +61,8 @@ class Authentification extends Controller
             'expires_at' => now()->addMinutes(5) //on recupère la date actuelle et on ajoute 5 minutes pour la date d'expiration
         ]);
 
-        Mail::to($dataUser->email)->send(new TwoFactorCodemail($code));
+        // DÉCLENCHEMENT DE LA NOTIFICATION (Mail + BDD)
+        $dataUser->notify(new LoginOtpNotification($code));
 
         $token = $dataUser->createToken('auth_token')->plainTextToken;
         return response()->json([
@@ -78,6 +80,24 @@ class Authentification extends Controller
         ]);
     }
 
+    // pour reenvoyer le code de verification a deux facteurs
+    public function resendToken(Request $request)
+    {
+        $user = $request->user(); // grâce au token 
+        $dataUser=User::where('email',$user->email)->first();
+        // génération du code puis stockage dans la table two-factor-codes
+        $code = random_int(100000, 999999);
+
+        TwoFactorCode::create([
+            'user_id' => $user->id,
+            'code' => $code,
+            'expires_at' => now()->addMinutes(5) //on recupère la date actuelle et on ajoute 5 minutes pour la date d'expiration
+        ]);
+
+        // DÉCLENCHEMENT DE LA NOTIFICATION (Mail + BDD)
+        $dataUser->notify(new LoginOtpNotification($code));
+
+    }
 
     // cette fonction permet de verifier le code de verification a deux facteurs
     public function twoFactorVerify(Request $request)

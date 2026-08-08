@@ -12,7 +12,7 @@ class LoginRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user() === null; // Autoriser uniquement si l'utilisateur n'est pas connecté
     }
 
     /**

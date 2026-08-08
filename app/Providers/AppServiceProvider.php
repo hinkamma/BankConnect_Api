@@ -24,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Exemple : Limiter les tentatives de connexion / 2FA à 5 essais par minute par adresse IP ou par email
         RateLimiter::for('login', function (Request $request) {
-            return Limit::perHour(5)->by($request->email ?? $request->ip())->response(function () {
+            return Limit::perHour(1000)->by($request->email ?? $request->ip())->response(function () {
                 return response()->json([
                     'status'  => false,
                     'message' => 'Trop de tentatives. Patientez pendant 1 heure.'

@@ -15,6 +15,12 @@ use App\Models\Account;
 use App\Http\Requests\VerifyAmountRequest;
 use App\Models\ScheduledTransfer;
 use App\Http\Requests\Api\ProgrammerVirementRequest;
+use App\Models\Beneficiary;
+use App\Http\Requests\Api\AddbeneficiaireRequest;
+use App\Http\Requests\Api\UpdateBeneficiaireRequest;
+use App\Http\Requests\Api\DeleteBeneficiaireRequest;
+use App\Http\Requests\Api\ListerBeneficiaireRequest;
+use App\Notifications\TransactionNotification;
 
 class OperationsController extends Controller
 
@@ -26,12 +32,14 @@ class OperationsController extends Controller
             return response()->json(["message"=>"aucun compte actif trouvé"]);
         }
 
-        $compte->solde = $compte->solde + $request->montant;
-        $compte->save();
-
-        DB::transaction(function () use ($compte, $request) {
+        // 1. Assigne la transaction à la variable $transaction
+        $transaction = DB::transaction(function () use ($compte, $request) {
             
-            Transaction::create([
+            // On met à jour le solde du compte
+            $compte->solde += $request->montant;
+            $compte->save();
+
+            return Transaction::create([
                 "account_id"   => $compte->id,
                 "type"         => "depot",
                 "amount"       => $request->montant,
@@ -40,8 +48,11 @@ class OperationsController extends Controller
                 "description"  => $request->description,
                 "status"       => "validee"
             ]);
-            
         });
+
+        // 3. $transaction n'est plus NULL, la notification fonctionne !
+        $compte->user->notify(new TransactionNotification($transaction, 'CREDIT'));
+
 
         return response()->json([
             "message"     => "depot effectué avec success !",
@@ -67,12 +78,14 @@ class OperationsController extends Controller
             return response()->json(["message"=>"le compte est insuffisant"]);
         }
        
-        $compte->solde=$compte->solde-$request->montant;
-        $compte->save();
+        
 
-        DB::transaction(function () use ($compte, $request) {
-            
-            Transaction::create([
+        $transaction = DB::transaction(function () use ($compte, $request) {
+        
+            $compte->solde=$compte->solde-$request->montant;
+            $compte->save();        
+
+            return Transaction::create([
                 "account_id"   => $compte->id,
                 "type"         => "retrait",           // ← Correction importante
                 "amount"       => $request->montant,
@@ -83,9 +96,10 @@ class OperationsController extends Controller
             ]);
             
         });
+        $compte->user->notify(new TransactionNotification($transaction, 'DEBIT'));
 
         return response()->json([
-            "message"=>"depot effectué avec success !",   // ← Tu peux aussi corriger ce message
+            "message"=>"retrait effectué avec succès !",   // ← Tu peux aussi corriger ce message
             "account_id"=>$compte->id,
             "new_balance"=>$compte->solde,
         ]);
@@ -163,6 +177,11 @@ class OperationsController extends Controller
                 'status' => 'validee',
             ]);
 
+            $emetteur = auth()->user()->first_name ? auth()->user()->first_name: 'Utilisateur inconnu'; // La personne connectée qui fait le virement
+            
+            // 3. $transaction n'est plus NULL, la notification fonctionne !
+            $receiverAccount->user->notify(new TransactionNotification($transaction,$emetteur, 'CREDIT'));
+
             return response()->json([
                 'status'=>true,
                 'message'=>"virement effectué avec succès",
@@ -172,7 +191,7 @@ class OperationsController extends Controller
     }
     
     // cette fonction permet a un utilisateur de verifier son compte
-    public function verifyAmount(VerifyAmountRequest $request){
+    public function verifyAmount(Request $request){
         $compte=$request->user()->Accounts()->first();
         if($compte->user_id !=$request->user()->id){
             return response()->json(["message","accès non autorisé"]);
@@ -268,6 +287,88 @@ class OperationsController extends Controller
         return response()->json([
             'status' => true,
             'message' => "virement programmé annulé"
+        ]);
+    }
+
+    // CREATE : ajouter un bénéficiaire
+    public function addbeneficiaire(AddbeneficiaireRequest $request)
+    {
+        $validated = $request->validated();
+
+        $user = $request->user();
+
+        // empêcher les doublons pour cet utilisateur
+        $exists = Beneficiary::where('user_id', $user->id)
+            ->where('account_number', $validated['account_number'])
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'status' => false,
+                'message' => "ce bénéficiaire est déjà enregistré"
+            ]);
+        }
+
+        $beneficiary = Beneficiary::create([
+            'user_id' => $user->id,
+            'account_number' => $validated['account_number'],
+            'nickname' => $validated['nickname'],
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => "bénéficiaire ajouté avec succès",
+            'beneficiary' => $beneficiary
+        ]);
+    }
+
+    // READ : lister tous les bénéficiaires de l'utilisateur connecté
+    public function ListerAllBeneficiaireToUser(Request $request)
+    {
+        $beneficiaries = Beneficiary::where('user_id', $request->user()->id)
+            ->orderBy('nickname')
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'data' => $beneficiaries
+        ]);
+    }
+
+
+    // UPDATE : modifier un bénéficiaire (typiquement le surnom)
+    public function updatebeneficiaire(Request $request, Beneficiary $beneficiary)
+    {
+        // sécurité : vérifier que ce bénéficiaire appartient bien à l'utilisateur connecté
+        if ($beneficiary->user_id !== $request->user()->id) {
+            return response()->json(['status' => false, 'message' => "non autorisé"], 403);
+        }
+
+        $validated = $request->validate([
+            'nickname' => 'required|string|max:255',
+        ]);
+
+        $beneficiary->update($validated);
+
+        return response()->json([
+            'status' => true,
+            'message' => "bénéficiaire mis à jour",
+            'beneficiary' => $beneficiary
+        ]);
+    }
+
+    // DELETE : supprimer un bénéficiaire
+    public function deletebeneficiaire(Request $request, Beneficiary $beneficiary)
+    {
+        if ($beneficiary->user_id !== $request->user()->id) {
+            return response()->json(['status' => false, 'message' => "non autorisé"], 403);
+        }
+
+        $beneficiary->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => "bénéficiaire supprimé"
         ]);
     }
 }
