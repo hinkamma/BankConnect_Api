@@ -58,7 +58,7 @@ class Authentification extends Controller
         TwoFactorCode::create([
             'user_id' => $dataUser->id,
             'code' => $code,
-            'expires_at' => now()->addMinutes(5) //on recupère la date actuelle et on ajoute 5 minutes pour la date d'expiration
+            'expires_at' => now()->addMinutes(1) //on recupère la date actuelle et on ajoute 5 minutes pour la date d'expiration
         ]);
 
         // DÉCLENCHEMENT DE LA NOTIFICATION (Mail + BDD)
