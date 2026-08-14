@@ -7,8 +7,8 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-        'http://localhost:4200',
-        'https://bank-connect-front.vercel.app', // à remplacer par ta vraie URL Vercel une fois connue
+        // 'http://localhost:62707',
+        'https://bank-connect-front.vercel.app',  
     ],
 
     'allowed_origins_patterns' => [],
