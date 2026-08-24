@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
+// use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Authentification;
-use App\Http\Controllers\HistoryTransactionController;
-use App\Http\Controllers\ManagerAccountController;
-use App\Http\Controllers\OperationBankController;
+// use App\Http\Controllers\HistoryTransactionController;
+// use App\Http\Controllers\ManagerAccountController;
+// use App\Http\Controllers\OperationBankController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\CompteController;
@@ -23,19 +23,26 @@ Route::post('/register',[Authentification::class,'register']);
 Route::post('/login',[Authentification::class,'login'])->middleware('throttle:login');
 
 
+//cette route permet aw un client de coir les informations relatives a son compte
+Route::post('/display_account/{id}',[CompteController::class, 'displayMyInformationAccount']);
+
+
+
 Route::middleware('auth:sanctum')->group(function(){
 
     // cette route permet de deconnecter tous les utilisateurs connectés de leur compte
     Route::post('/logout_all',[Authentification::class,'logoutAllDevices']);
 
-    
+
     // route qui permet de verifier le code a deux facteurs
-    Route::post('/verify_code',[Authentification::class,'twoFactorVerify']);
+    Route::post('/verify_code/{user_id}',[Authentification::class,'twoFactorVerify']);
 
     Route::post('/resend_code',[Authentification::class,'resendToken']);
 
     // cette route permet de voir tous les utilisateurs connectés a leur compte
     Route::get('/display_all_users',[Authentification::class,'devices']);
+
+    Route ::post('/select_type_compte',[CompteController:: class,'select_type_compte']);
 
 
     //cette route permet de deconnecter un utilisateur de son compte
@@ -47,8 +54,6 @@ Route::middleware('auth:sanctum')->group(function(){
     //cette route permet a un client de d'afficher ses compte specifique
     Route::get('/display_accounts',[CompteController::class,'displayAllAccounts' ]);
 
-    //cette route permet aw un client de coir les informations relatives a son compte
-    Route::get('/display_account/{id}',[CompteController::class, 'displayMyInformationAccount']);
 
     //cette route permet de femer le compte d'un utilisateur
     Route::post('/close_account/{id}',[CompteController::class, 'closeAccount']);
@@ -77,7 +82,7 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::post('/virements-programmes', [OperationsController::class, 'faireVirementProgramme']);
 
     // Lister les virements programmés de l'utilisateur connecté
-    Route::get('/virements-programmes', [OperationsController::class, 'ListerVirementsProgrammes']);
+    Route::get('/etList-virements-programmes', [OperationsController::class, 'ListerVirementsProgrammes']);
 
     // Annuler un virement programmé
     Route::delete('/virements-programmes/{scheduledTransfer}', [OperationsController::class, 'anullerVirementProgramme']);
@@ -96,9 +101,9 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::get('/history_operations',[StoryController::class,'historyOperations']);
 
 
-    //operations sur le profil utilisateur 
-    Route::get('/profil', [ProfilController::class, 'show']);
-    Route::put('/profil', [ProfilController::class, 'update']);
+    //operations sur le profil utilisateur
+    Route::get('/profilShow', [ProfilController::class, 'show']);
+    Route::put('/profilUpdate', [ProfilController::class, 'update']);
     Route::post('/profil/photo', [ProfilController::class, 'updatePhoto']); // POST pour l'envoi de fichier FormData
     Route::put('/profil/password', [ProfilController::class, 'updatePassword']);
 
@@ -106,4 +111,4 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::post('/profil/verify-identity', [ProfilController::class, 'verifyIdentity']);
 });
 
-// 
+//

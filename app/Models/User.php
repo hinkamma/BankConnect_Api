@@ -29,6 +29,7 @@ class User extends Authenticatable
         'status',
         'role',
         'profile_photo',
+        'adress',
     ];
 
     /**

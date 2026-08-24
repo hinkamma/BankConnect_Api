@@ -45,7 +45,7 @@ class Authentification extends Controller
     function login(LoginRequest $request){
         $validatedData=$request->validated();
         $dataUser=User::where('email', $validatedData['email'])->first();
-        
+
         if(!$dataUser || !(Hash::check($request["password"],$dataUser['password']))){
             return response()->json([
                 'back_flash'=>'identifiants incorrects'
@@ -83,7 +83,7 @@ class Authentification extends Controller
     // pour reenvoyer le code de verification a deux facteurs
     public function resendToken(Request $request)
     {
-        $user = $request->user(); // grâce au token 
+        $user = $request->user(); // grâce au token
         $dataUser=User::where('email',$user->email)->first();
         // génération du code puis stockage dans la table two-factor-codes
         $code = random_int(100000, 999999);
@@ -94,8 +94,19 @@ class Authentification extends Controller
             'expires_at' => now()->addMinutes(5) //on recupère la date actuelle et on ajoute 5 minutes pour la date d'expiration
         ]);
 
+        $hasAccount = $user->accounts()->exists();
+        $token = $dataUser->createToken('auth_token')->plainTextToken;
         // DÉCLENCHEMENT DE LA NOTIFICATION (Mail + BDD)
         $dataUser->notify(new LoginOtpNotification($code));
+
+
+        return response()->json([
+            'status'  => true,
+            'token' => $token,
+            'hasAccount'=> $hasAccount,
+            'message' => 'Email vérifié avec succès',
+            'user'    => $user
+        ]);
 
     }
 
@@ -103,7 +114,6 @@ class Authentification extends Controller
     public function twoFactorVerify(Request $request)
     {
         $validated = $request->validate([
-            'user_id' => 'required||exists:users,id',
             'token' => 'required|string',
         ]);
 
@@ -124,14 +134,19 @@ class Authentification extends Controller
         $user = User::find($request->user_id);
         $token = $user->createToken('auth_token')->plainTextToken;
 
+         // Vérifie si l'utilisateur a au moins un compte bancaire
+        $hasAccount = $user->accounts()->exists();
+
         return response()->json([
             'status'  => true,
-            'token_final_connexion' => $token,
+            'token' => $token,
+            'hasAccount'=> $hasAccount,
             'message' => 'Email vérifié avec succès',
             'user'    => $user
         ]);
     }
 
+    
     //Déconnexion de TOUS les appareils (révoque tous les tokens)
     public function logoutAllDevices(Request $request)
     {
@@ -144,7 +159,7 @@ class Authentification extends Controller
         ], 200);
     }
 
-    
+
     //Liste de tous les jetons/appareils actifs (Optionnel)
     public function devices(Request $request)
     {

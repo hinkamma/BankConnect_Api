@@ -12,7 +12,7 @@ class ProgrammerVirementRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() != null;
+        return $this->user() !== null;
     }
 
     /**
@@ -23,28 +23,32 @@ class ProgrammerVirementRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'source_account_id'   => 'required|integer|exists:accounts,id',
             'account_number_dest' => 'required|string|exists:accounts,account_number',
-            'amount' => 'required|numeric|min:1',
-            'description' => 'nullable|string|max:255',
-            'scheduled_date' => 'required|date|after:today',
+            'amount'              => 'required|numeric|min:1',
+            'description'         => 'nullable|string|max:255',
+            'scheduled_date'      => 'required|date|after:today',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'account_number_dest.required' => "le numéro de compte du destinataire est obligatoire",
-            'account_number_dest.exists' => "le compte destinataire est introuvable",
+            'source_account_id.required'   => "Le compte source est obligatoire.",
+            'source_account_id.exists'     => "Le compte source sélectionné n'existe pas.",
 
-            'amount.required' => "le montant est obligatoire",
-            'amount.numeric' => "le montant doit être un nombre",
-            'amount.min' => "le montant doit être supérieur à 0",
+            'account_number_dest.required' => "Le numéro de compte du destinataire est obligatoire.",
+            'account_number_dest.exists'   => "Le compte destinataire est introuvable.",
 
-            'description.max' => "la description ne doit pas dépasser 255 caractères",
+            'amount.required'              => "Le montant est obligatoire.",
+            'amount.numeric'               => "Le montant doit être un nombre.",
+            'amount.min'                   => "Le montant doit être supérieur à 0.",
 
-            'scheduled_date.required' => "la date de programmation est obligatoire",
-            'scheduled_date.date' => "la date fournie n'est pas valide",
-            'scheduled_date.after' => "la date programmée doit être postérieure à aujourd'hui",
+            'description.max'              => "La description ne doit pas dépasser 255 caractères.",
+
+            'scheduled_date.required'      => "La date de programmation est obligatoire.",
+            'scheduled_date.date'          => "La date fournie n'est pas valide.",
+            'scheduled_date.after'         => "La date programmée doit être postérieure à aujourd'hui.",
         ];
     }
 }

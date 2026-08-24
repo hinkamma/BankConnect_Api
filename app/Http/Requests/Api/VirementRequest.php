@@ -12,7 +12,7 @@ class VirementRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() != null;
+        return $this->user() !== null;
     }
 
     /**
@@ -23,16 +23,26 @@ class VirementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'account_number_dest'=>'required|string|exists:accounts,account_number',
-            'amount'=>'required|numeric|min:100',
-            'description'=>'nullable|string|max:255'
+            'source_account_id'    => 'required|integer|exists:accounts,id',
+            'account_number_dest'  => 'required|string|exists:accounts,account_number',
+            'amount'               => 'required|numeric|min:100',
+            'description'          => 'nullable|string|max:255'
         ];
     }
 
-    public function messages():array{
+    /**
+     * Get the error messages for the defined validation rules.
+     */
+    public function messages(): array
+    {
         return [
-            'account_number_dest.required'=>"le numero de compte est requis",
-            'amount.required'=>"le montant est requis"
+            'source_account_id.required'   => "Le compte source est requis.",
+            'source_account_id.exists'     => "Le compte source sélectionné n'existe pas.",
+            'account_number_dest.required' => "Le numéro de compte destinataire est requis.",
+            'account_number_dest.exists'   => "Le numéro de compte destinataire est introuvable.",
+            'amount.required'              => "Le montant est requis.",
+            'amount.min'                   => "Le montant minimum pour un virement est de 100 FCFA.",
+            'amount.numeric'               => "Le montant doit être un nombre valide."
         ];
     }
 }

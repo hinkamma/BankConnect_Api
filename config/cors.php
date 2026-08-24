@@ -7,8 +7,8 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-        // 'http://localhost:62707',
-        'https://bank-connect-front.vercel.app',  
+        // ' http://localhost:4200',
+        'https://bank-connect-front.vercel.app',
     ],
 
     'allowed_origins_patterns' => [],
