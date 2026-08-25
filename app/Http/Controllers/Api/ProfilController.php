@@ -31,7 +31,7 @@ class ProfilController extends Controller
         $user = $request->user();
 
         // Utilisez validated() sous forme de MÉTHODE avec des parenthèses ()
-        $user->update($request->validated());  
+        $user->update($request->validated());
 
         return response()->json([
             'status'  => true,
@@ -43,7 +43,7 @@ class ProfilController extends Controller
     public function updatePhoto(Request $request)
     {
         $request->validate([
-            'profile_photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2Mo
+            'profile_photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', 
         ]);
 
         $user = $request->user();
