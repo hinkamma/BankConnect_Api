@@ -5,6 +5,7 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log; // 
 
 class LoginOtpNotification extends Notification
 {
@@ -24,12 +25,17 @@ class LoginOtpNotification extends Notification
 
     public function toMail($notifiable): MailMessage
     {
+        //  2. Ajouter cette ligne pour afficher le code de façon très visible dans Railway
+        Log::info("==========================================");
+        Log::info("CODE OTP DE {$notifiable->email} : {$this->otpCode}");
+        Log::info("==========================================");
+
         return (new MailMessage)
             ->subject('Votre code de vérification')
             ->greeting("Bonjour {$notifiable->name},")
             ->line("Voici votre code d'authentification à 6 chiffres pour vous connecter :")
             ->line(" **{$this->otpCode}** ")
-            ->line("Ce code est valide pendant 5 minutes. Ne le partagez avec personne.");
+            ->line("Ce code me valide pendant 5 minutes. Ne le partagez avec personne.");
     }
 
     public function toArray($notifiable): array
