@@ -3,15 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Http\Requests\Api\RegisterRequest;
 use App\Http\Requests\Api\LoginRequest;
-use App\Models\TwoFactorCode;
+use App\Http\Requests\Api\RegisterRequest;
 use App\Mail\TwoFactorCodemail;
-use Illuminate\Support\Facades\Hash;
+use App\Models\TwoFactorCode;
 use App\Models\User;
-use Illuminate\Support\Facades\Mail;
 use App\Notifications\LoginOtpNotification;
+use Exception;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class Authentification extends Controller
 {
@@ -61,15 +63,19 @@ class Authentification extends Controller
             'expires_at' => now()->addMinutes(1) //on recupère la date actuelle et on ajoute 5 minutes pour la date d'expiration
         ]);
 
-        // DÉCLENCHEMENT DE LA NOTIFICATION (Mail + BDD)
-        $dataUser->notify(new LoginOtpNotification($code));
+        try {
+            // DÉCLENCHEMENT DE LA NOTIFICATION (Mail + BDD)
+            $dataUser->notify(new LoginOtpNotification($code));
 
-        $token = $dataUser->createToken('auth_token')->plainTextToken;
-        return response()->json([
-            'user_id' => $dataUser->id,
-            'token' => $token,
-            'message' => 'code envoyé par email'
-        ]);
+            $token = $dataUser->createToken('auth_token')->plainTextToken;
+            return response()->json([
+                'user_id' => $dataUser->id,
+                'token' => $token,
+                'message' => 'code envoyé par email'
+            ]);
+        }catch(Exception $e){
+            Log::error(" ERREUR ENVOI MAIL OTP : " . $e->getMessage());
+        }
     }
 
     //fonction qui permet de deconnecter un utilisateur
@@ -146,7 +152,7 @@ class Authentification extends Controller
         ]);
     }
 
-    
+
     //Déconnexion de TOUS les appareils (révoque tous les tokens)
     public function logoutAllDevices(Request $request)
     {
