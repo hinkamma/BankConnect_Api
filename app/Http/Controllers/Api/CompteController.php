@@ -37,7 +37,7 @@ class CompteController extends Controller
 
         $account = $user->accounts()->create([
             'type' => $request->type_compte,
-            'balance' => 0,
+            'solde' => 0,
             'account_number' => $this->generateAccountNumber(),
             'status' => 'actif',
         ]);
