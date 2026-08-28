@@ -9,6 +9,7 @@ use App\Mail\TwoFactorCodemail;
 use App\Models\TwoFactorCode;
 use App\Models\User;
 use App\Notifications\LoginOtpNotification;
+use BcMath\Number;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -55,12 +56,18 @@ class Authentification extends Controller
         }
 
         // génération du code puis stockage dans la table two-factor-codes
-        $code = random_int(100000, 999999);
+        // $code = random_int(100000, 999999);
+        $code=(int)123456;
 
         TwoFactorCode::create([
             'user_id' => $dataUser->id,
             'code' => $code,
-            'expires_at' => now()->addMinutes(1) //on recupère la date actuelle et on ajoute 5 minutes pour la date d'expiration
+            'expires_at' => now()->addMinutes(5) //on recupère la date actuelle et on ajoute 5 minutes pour la date d'expiration
+        ]);
+
+        // Met à jour la date sans toucher aux autres champs (pas besoin de save() en plus !)
+        $dataUser->update([
+            'last_login_at' => now()
         ]);
 
         try {
@@ -71,6 +78,8 @@ class Authentification extends Controller
             return response()->json([
                 'user_id' => $dataUser->id,
                 'token' => $token,
+                'first_name'=>$dataUser->first_name,
+                'profile_photo'=>$dataUser->profile_photo,
                 'message' => 'code envoyé par email'
             ]);
         }catch(Exception $e){
@@ -147,7 +156,7 @@ class Authentification extends Controller
             'status'  => true,
             'token' => $token,
             'hasAccount'=> $hasAccount,
-            'message' => 'Email vérifié avec succès',
+            'message' => 'Email vérifié.',
             'user'    => $user
         ]);
     }

@@ -397,6 +397,7 @@ class OperationsController extends Controller
         }
 
         $validated = $request->validate([
+            'account_number'=>'required | string ',
             'nickname' => 'required|string|max:255',
         ]);
 

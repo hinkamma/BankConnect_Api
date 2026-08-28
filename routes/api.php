@@ -105,7 +105,7 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::get('/profilShow', [ProfilController::class, 'show']);
     Route::put('/profilUpdate', [ProfilController::class, 'update']);
     Route::post('/profil/photo', [ProfilController::class, 'updatePhoto']); // POST pour l'envoi de fichier FormData
-    Route::put('/profil/password', [ProfilController::class, 'updatePassword']);
+    Route::put('/profil/up', [ProfilController::class, 'updatePassword']);
 
     // Route de vérification d'identité (OCR)
     Route::post('/profil/verify-identity', [ProfilController::class, 'verifyIdentity']);

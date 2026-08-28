@@ -43,7 +43,7 @@ class ProfilController extends Controller
     public function updatePhoto(Request $request)
     {
         $request->validate([
-            'profile_photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', 
+            'profile_photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         $user = $request->user();
@@ -89,7 +89,8 @@ class ProfilController extends Controller
 
         // Mise à jour du nouveau mot de passe
         $user->update([
-            'password' => Hash::make($validated['password'])
+            'password' => Hash::make($validated['password']),
+            'password_changed_at' => now()
         ]);
 
         return response()->json([
