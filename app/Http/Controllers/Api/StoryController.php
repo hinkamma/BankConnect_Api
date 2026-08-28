@@ -8,121 +8,82 @@ use App\Models\Transaction;
 
 class StoryController extends Controller
 {
-    public function historyOperations(Request $request)
-    {
-        $user = $request->user();
-        $account = $user->Accounts()->first();
+   public function historyOperations(Request $request)
+{
+    $user = $request->user();
 
-        if (!$account) {
-            return response()->json(['status' => false, 'message' => 'Compte introuvable.'], 440);
-        }
+    // 1. Récupérer spécifiquement le COMPTE COURANT de l'utilisateur
+    $account = $user->accounts()->where('type', 'courant')->first();
 
-        // Requête de base : toutes les transactions liées au compte (émetteur OU destinataire)
-        $query = Transaction::with(['senderAccount.user', 'receiverAccount.user'])
-            ->where(function ($q) use ($account) {
-                $q->where('sender_account_id', $account->id)
-                ->orWhere('receiver_account_id', $account->id);
-            });
-
-        //Filtre par date de début (ex: 2026-07-30)
-        if ($request->filled('start_date')) {
-            $query->whereDate('created_at', '>=', $request->start_date);
-        }
-
-        // 🔍 Filtre par date de fin (ex: 2026-08-04)
-        if ($request->filled('end_date')) {
-            $query->whereDate('created_at', '<=', $request->end_date);
-        }
-
-        // Filtre par type (virement, depot, retrait)
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
-        }
-
-        // Taper la plus récente d'abord
-        $query->orderBy('created_at', 'desc');
-
-        // Pagination (15 par page par défaut, personnalisable)
-        $perPage = $request->get('page', 15);
-        $transactions = $query->paginate($perPage);
-    
-        // Formater les données pour distinguer facilement les Crédits des Débits
-        $transactions->getCollection()->transform(function ($txn) use ($account) {
-            $isDebit = ($txn->sender_account_id === $account->id);
-            return [
-                'id'          => $txn->id,
-                'reference'   => $txn->reference,
-                'sens'        => $isDebit ? 'DEBIT' : 'CREDIT',
-                'montant'     => ($isDebit ? '-' : '+') . $txn->amount,
-                'type'        => $txn->type,
-                'description' => $txn->description,
-                'statut'      => $txn->status,
-                'date'        => $txn->created_at->format('Y-m-d H:i:s'),
-                'partenaire'  => $isDebit ? ($txn->receiverAccount->user->name ?? 'N/A') : ($txn->senderAccount->user->name ?? 'N/A'),
-            ];
-        });
-
+    if (!$account) {
         return response()->json([
-            'status' => true,
-            'data'   => $transactions
-        ]);
+            'status'  => false,
+            'message' => 'Aucun compte courant trouvé pour cet utilisateur.'
+        ], 404);
     }
 
-    /**
-     * 2. Exporter l'historique en CSV
-     */
-    public function exportCsv(Request $request)
-    {
-        $user = $request->user();
-        $account = $user->account;
+    // 2. Requête sur les transactions liées UNIQUEMENT à ce compte courant
+    $query = Transaction::with(['senderAccount.user', 'receiverAccount.user'])
+        ->where(function ($q) use ($account) {
+            $q->where('sender_account_id', $account->id)   // Virement sortant
+              ->orWhere('receiver_account_id', $account->id) // Virement entrant ou Dépôt
+              ->orWhere('account_id', $account->id);          // Opérations directes sur le compte (Dépôt/Retrait)
+        })
+        // On restreint aux types d'opérations souhaités (dépôts et virements)
+        ->whereIn('type', ['retrait', 'depot', 'transfert']);
 
-        $query = Transaction::where(function ($q) use ($account) {
-            $q->where('sender_account_id', $account->id)
-              ->orWhere('receiver_account_id', $account->id);
-        });
+    // Filtre par date de début
+    if ($request->filled('start_date')) {
+        $query->whereDate('created_at', '>=', $request->start_date);
+    }
 
-        if ($request->filled('start_date')) {
-            $query->whereDate('created_at', '>=', $request->start_date);
-        }
-        if ($request->filled('end_date')) {
-            $query->whereDate('created_at', '<=', $request->end_date);
-        }
+    // Filtre par date de fin
+    if ($request->filled('end_date')) {
+        $query->whereDate('created_at', '<=', $request->end_date);
+    }
 
-        $transactions = $query->orderBy('created_at', 'desc')->get();
+    // Tri de la plus récente à la plus ancienne
+    $query->orderBy('created_at', 'desc');
 
-        $fileName = 'historique_transactions_' . date('Y-m-d') . '.csv';
+    // Pagination
+    $page = $request->get('page', 3);
+    $transactions = $query->paginate($page);
 
-        $headers = [
-            "Content-type"        => "text/csv; charset=UTF-8",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ];
+    // 3. Formater les données pour le Frontend Angular
+    $transactions->getCollection()->transform(function ($txn) use ($account) {
 
-        $callback = function () use ($transactions, $account) {
-            $file = fopen('php://output', 'w');
-            // Bom UTF-8 pour le bon affichage des accents dans Excel
-            fputs($file, "\xEF\xBB\xBF");
+        // C'est un DÉBIT (-) uniquement si le compte courant est l'émetteur (sender)
+        $isDebit = ($txn->sender_account_id === $account->id);
 
-            // En-têtes du fichier CSV
-            fputcsv($file, ['Référence', 'Date', 'Type', 'Sens', 'Montant (FCFA)', 'Description']);
+        // Détermination du partenaire selon le sens de l'opération
+        $partenaire = 'Banque / Dépôt';
 
-            foreach ($transactions as $txn) {
-                $isDebit = ($txn->sender_account_id === $account->id);
-                fputcsv($file, [
-                    $txn->reference,
-                    $txn->created_at->format('Y-m-d H:i:s'),
-                    $txn->type,
-                    $isDebit ? 'Débit' : 'Crédit',
-                    ($isDebit ? '-' : '+') . $txn->amount,
-                    $txn->description ?? ''
-                ]);
+        if ($isDebit) {
+            // Virement envoyé à quelqu'un d'autre
+            $partenaire = $txn->receiverAccount?->user?->name ?? 'Destinataire externe';
+        } else {
+            // Virement reçu d'un autre utilisateur
+            if ($txn->senderAccount && $txn->senderAccount->user_id !== $account->user_id) {
+                $partenaire = $txn->senderAccount->user->name ?? 'Expéditeur inconnu';
             }
+        }
 
-            fclose($file);
-        };
+        return [
+            'id'          => $txn->id,
+            'reference'   => $txn->reference,
+            'sens'        => $isDebit ? 'DEBIT' : 'CREDIT',
+            'montant'     => ($isDebit ? '-' : '+') . $txn->amount,
+            'type'        => $txn->type,
+            'description' => $txn->description,
+            'statut'      => $txn->status,
+            'date'        => $txn->created_at->format('Y-m-d H:i:s'),
+            'partenaire'  => $partenaire,
+        ];
+    });
 
-        return response()->stream($callback, 200, $headers);
-    }
+    return response()->json([
+        'status' => true,
+        'data'   => $transactions
+    ]);
+}
 }
