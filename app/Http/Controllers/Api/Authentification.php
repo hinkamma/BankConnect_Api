@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class Authentification extends Controller
 {
@@ -79,7 +80,8 @@ class Authentification extends Controller
                 'user_id' => $dataUser->id,
                 'token' => $token,
                 'first_name'=>$dataUser->first_name,
-                'profile_photo'=>$dataUser->profile_photo,
+                'last_name'=>$dataUser->last_name,
+                'profile_photo'=>Storage::disk('public')->url($dataUser->profile_photo),
                 'message' => 'code envoyé par email'
             ]);
         }catch(Exception $e){
